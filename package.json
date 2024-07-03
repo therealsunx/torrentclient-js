@@ -1,0 +1,27 @@
+{
+  "name": "torrent-js",
+  "version": "1.0.0",
+  "description": "torrent client developed for fun",
+  "main": "index.js",
+  "type" : "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/therealsunx/torrentclient-js.git"
+  },
+  "keywords": [
+    "torrent",
+    "torrent-js"
+  ],
+  "author": "sunil sapkota",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/therealsunx/torrentclient-js/issues"
+  },
+  "homepage": "https://github.com/therealsunx/torrentclient-js#readme",
+  "dependencies": {
+    "bencode": "^4.0.0"
+  }
+}
