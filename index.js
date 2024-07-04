@@ -1,10 +1,9 @@
 'use strict';
 
-import fs from "fs";
-import bencode from "bencode";
+import {openTorrent} from "./modules/torrent-parser.js";
 import getPeers from "./modules/tracker.js";
 
-const torrent = bencode.decode(fs.readFileSync('test.torrent'));
+const torrent = openTorrent('espresso.torrent');
 
 getPeers(torrent, peers => {
     console.log("Peers recieved : ", peers);
