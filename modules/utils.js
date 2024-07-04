@@ -3,6 +3,7 @@
 import crypto from "node:crypto";
 
 let _id = null;
+const decoder = new TextDecoder();
 
 export const generateID = ()=>{
     if(!_id){
@@ -14,3 +15,4 @@ export const generateID = ()=>{
     return _id;
 }
 
+export const bufToStr = buf => decoder.decode(buf);

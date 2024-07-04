@@ -3,15 +3,16 @@ import buffer from "node:buffer";
 import {parse} from "node:url";
 import crypto from "node:crypto";
 import { infoHash, size } from "./torrent-parser.js";
-import { generateID } from "./utils.js";
+import { generateID, bufToStr } from "./utils.js";
 
 export default function getPeers (torrent, recievePeersCallback) {
     const socket = dgram.createSocket('udp4');
-    const url = parse(new TextDecoder().decode(torrent.announce));
+    const url = parse(bufToStr(torrent.announce));
 
     sendUDP(socket, connectionReqMsg(), url);
 
     socket.on("message", res => {
+        console.log("recieved : ", res);
         if(responseType(res) === 'connect'){
             // recieve and parse connection response
             const con_resp = parseConnectResponse(res);
@@ -25,6 +26,15 @@ export default function getPeers (torrent, recievePeersCallback) {
         }
     });
 };
+
+function responseType(response){
+    switch(response.readUint32BE(0)){
+        case 0: return 'connect';
+        case 1: return 'announce';
+        case 2: return 'scrape';
+        case 3: return 'error';
+    }
+}
 
 function sendUDP(socket, message, url, callback = ()=>{}){
     socket.send(message, url.port, url.host, callback);
