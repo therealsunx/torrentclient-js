@@ -23,7 +23,7 @@ const getTrackers = (filename) => {
 
 
 //for buildconnection request
-const connectionRequestMessage=()=>{
+const BuildConnectionRequestMessage=()=>{
     const buf=Buffer.alloc(16)
     buf.writeUInt32BE(0x417, 0); //connection_id
     buf.writeUInt32BE(0x27101980, 4);//connection_id
@@ -84,57 +84,80 @@ const BuildConnectionParse=(buffer)=>{
 
 //for getting the peer
 const getpeers=async ()=>{
+    let i=0;
     const socket=dgram.createSocket('udp4');
-    let activeUrl
+    let url
     const urls=getTrackers(filename)
-    let port,hostname;
 
+    udpSend(socket,BuildConnectionRequestMessage(),urls[i])
     socket.on('message',(response,rinfo)=>{
-        console.log('getting message')
+        url=urls[i]
+        if(resType(response)=='connect')
         const connResponse=BuildConnectionParse(response)
-        console.log(`buildconnection response is`,connResponse)
+        console.log(`buildconnection response is`,connResponse,url)
         // const announceResponse=sendbuffers(socket,activeUrl,announceRequestMessage(connResponse.connectionId,port))
         
     })
 
-    for (let url of urls){
-        const response=await sendbuffers(socket,url,connectionRequestMessage().toString())
-        console.log(response)
-        if(response){
-            activeUrl=url
-            port=parse(url).port
-            console.log(port)
-            break
+    socket.on('error',(err)=>{
+        i++;
+        if(i<urls.length){
+        udpSend(socket,BuildConnectionRequestMessage(),urls[i])
         }
+        else{
+            console.log(err)
+            console.log(`coulnt establish connection to the tracker tried ${i} trackers`)
+        }
+
+    })
+
+    // for (let url of urls){
+    //     const response=await sendbuffers(socket,url,BuildConnectionRequestMessage())
+    //     console.log(response)
+    //     if(response){
+    //         console.log(url)
+    //         // activeUrl=url
+    //         // port=parse(url).port
+    //         // console.log(port)
+    //         break
+    //     }
         
-    }
+    // }
+
 }
 
 
 //to send message in udp
-const sendbuffers= (socket,url,message)=>{
-    const {port,hostname}=parse(url)
-    return new Promise((resolve, reject) => {
-        socket.send(message, port, hostname, (err, bytes) => {
-            if (err) {
-                console.error(`Error sending to ${hostname}:${port}`, err);
-                reject(0);
-            }
-            else{
-                resolve(1)
-            }
-        });
-    });
+// const sendbuffers= (socket,url,message)=>{
+//     const {port,hostname}=parse(url)
+//     return new Promise((resolve, reject) => {
+//         socket.send(message, port, hostname, (err, bytes) => {
+//             if (err) {
+//                 console.error(`Error sending to ${hostname}:${port}`, err);
+//                 reject(0);
+//             }
+//             else{
+//                 resolve(1)
+//             }
+//         });
+//     });
+// }
+
+const udpSend=(socket,message,url)=>{
+    url = parse(url);
+    socket.send(message, 0, message.length, url.port, url.hostname); 
 }
 
 const test=()=>{
     const socket=dgram.createSocket('udp4');
     socket.on('message',(msg,rinfo)=>{
         console.log(msg,rinfo)
+        socket.close()
     })
     socket.bind(8081)
 
     socket.send('hi its me anish',8081,'localhost')
+    
 }
 
 
