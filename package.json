@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "name": "bittorrent",
+  "version": "1.0.0",
+  "description": "bittorrent client from node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Anish Subedi",
+  "license": "ISC",
+  "dependencies": {
+    "bencode": "^4.0.0",
+    "crypto-js": "^4.2.0",
+    "socket.io-client": "^4.7.5",
+    "url-parse": "^1.5.10"
+  }
+}
