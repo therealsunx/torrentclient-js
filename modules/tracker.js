@@ -1,3 +1,5 @@
+'use strict';
+
 import dgram from "node:dgram";
 import {parse} from "node:url";
 import crypto from "node:crypto";
@@ -106,8 +108,8 @@ function parseAnnounceResponse(response){
 
     for(let i=0; i<_peerdata.length; i+=6){
         _peers.push({
-            ip : _peerdata.slice(i, i+4),
-            port : _peerdata.slice(i+4, i+6)
+            ip : _peerdata.slice(i, i+4).join('.'),
+            port : _peerdata.readUInt16BE(i+4)
         });
     }
 

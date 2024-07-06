@@ -1,3 +1,5 @@
+'use strict';
+
 import bignum from "bignum";
 import crypto from "node:crypto";
 import fs from 'fs';
