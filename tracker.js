@@ -40,6 +40,7 @@ const announceRequestMessage=(connection_id,port)=>{
     const buf=Buffer.alloc(98)
     const [hsize,lsize]=torrentSize(torrent)
 
+    // console.log(connection_id)
     connection_id.copy(buf,0) //connection
     buf.writeUInt32BE(0x1,8); //announce
     crypto.randomBytes(4).copy(buf,12); //random transcation _id
@@ -47,12 +48,12 @@ const announceRequestMessage=(connection_id,port)=>{
     peerId().copy(buf,36) //peer id
     Buffer.alloc(8).copy(buf,56) //for downloaded
     Buffer.alloc(8).copy(buf,64) //left
-    buf.writeUInt32BE(hsize)//uploaded higher
-    buf.writeUint32BE(lsize)//'uploaded lower
+    buf.writeUInt32BE(hsize,72)//uploaded higher
+    buf.writeUint32BE(lsize,76)//'uploaded lower
     buf.writeUInt32BE(0x0,80);  //event
     buf.writeUInt32BE(0,84); //ip
     crypto.randomBytes(4).copy(buf,88) //key
-    buf.writeUInt32BE(-1,92); //num_want
+    buf.writeInt32BE(-1,92); //num_want
     buf.writeUInt16BE(port, 96);
 
     return buf
@@ -61,13 +62,11 @@ const announceRequestMessage=(connection_id,port)=>{
 
 //for which response type it is
 const resType=(res)=>{
-    length=res.length
-    if (length==16){
-        return "connection"
-    }
-    else{
-        return 'others'
-    }
+    // console.log('insiede the resType ')
+    const action = res.readUInt32BE(0);
+    if (action === 0) return 'connect';
+    if (action === 1) return 'announce';
+    if(action==3) return 'error';
 }
 
 
@@ -80,22 +79,64 @@ const BuildConnectionParse=(buffer)=>{
     }
 }
 
+//for parse of the announce
+const AnnounceRespParse=(buffer)=>{
+    const ip_addresses_length=(buffer.length-20)/6
+    let ip_addresses=[]
+    let ports=[]
+    // console.log(buffer.length)
+    for (let i=0;i<ip_addresses_length;i++)
+    {
+        let ip_address=buffer.slice(20+6*i,20+6*i+4).join('.')
+        let port=buffer.readUInt16BE(24+6*i)
+        ip_addresses.push(ip_address)
+        ports.push(port)
+    }
+    console.log(ip_addresses.length)
+
+    return {
+        action:buffer.readUInt32BE(0),
+        transaction_id:buffer.readUInt32BE(4),
+        interval:buffer.readUInt32BE(8),
+        leechers:buffer.readUInt32BE(12),
+        seeders:buffer.readUInt32BE(16),
+        peers:{
+            ip:ip_addresses,
+            port:ports
+        }
+    }
+}
+
 
 
 //for getting the peer
 const getpeers=async ()=>{
     let i=0;
     const socket=dgram.createSocket('udp4');
-    let url
+    let url,port
     const urls=getTrackers(filename)
 
     udpSend(socket,BuildConnectionRequestMessage(),urls[i])
     socket.on('message',(response,rinfo)=>{
         url=urls[i]
-        if(resType(response)=='connect')
+        port=parse(url).port
+
+        if(resType(response)=='connect'){
         const connResponse=BuildConnectionParse(response)
-        console.log(`buildconnection response is`,connResponse,url)
-        // const announceResponse=sendbuffers(socket,activeUrl,announceRequestMessage(connResponse.connectionId,port))
+        // console.log(connResponse)
+        const annouonceReq=announceRequestMessage(connResponse.connectionId,port)
+        // console.log(port,annouonceReq,url)
+        udpSend(socket,annouonceReq,url)
+        }
+        else if(resType(response)=='announce')
+        {
+            const announceResp = AnnounceRespParse(response)
+            console.log(announceResp)
+        }
+        else if(resType(response)=='error')
+        {
+            console.log(response.toString())
+        }
         
     })
 
