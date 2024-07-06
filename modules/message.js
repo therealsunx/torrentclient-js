@@ -1,5 +1,5 @@
-import { infoHash } from "./torrent-parser";
-import { generateID } from "./utils";
+import { infoHash } from "./torrent-parser.js";
+import { generateID } from "./utils.js";
 
 export class MessageBuilder{
     static handshake(torrent){
@@ -9,7 +9,7 @@ export class MessageBuilder{
         _buf.writeUint32BE(0, 20);
         _buf.writeUint32BE(0, 24);
         infoHash(torrent).copy(_buf, 28);
-        _buf.write(generateID(), 48);
+        generateID().copy(_buf, 48);
         return _buf;
     }
 
