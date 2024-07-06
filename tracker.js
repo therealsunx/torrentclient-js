@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import dgram  from 'dgram';
 import parse from 'url-parse'
 import { peerId, readTorrentFile, torrentSize ,infohash} from './utils.js';
+import { BuildConnectionParse,AnnounceRespParse } from './torrentparser.js';
 
 
 const filename='espresso.torrent'
@@ -70,47 +71,43 @@ const resType=(res)=>{
 }
 
 
-//for building the connection
-const BuildConnectionParse=(buffer)=>{
-    return {
-        action: buffer.readUInt32BE(0),
-        transactionId: buffer.readUInt32BE(4),
-        connectionId: buffer.slice(8)
-    }
+//to send message in udp
+// const sendbuffers= (socket,url,message)=>{
+//     const {port,hostname}=parse(url)
+//     return new Promise((resolve, reject) => {
+//         socket.send(message, port, hostname, (err, bytes) => {
+//             if (err) {
+//                 console.error(`Error sending to ${hostname}:${port}`, err);
+//                 reject(0);
+//             }
+//             else{
+//                 resolve(1)
+//             }
+//         });
+//     });
+// }
+
+const udpSend=(socket,message,url)=>{
+    url = parse(url);
+    socket.send(message, 0, message.length, url.port, url.hostname); 
 }
 
-//for parse of the announce
-const AnnounceRespParse=(buffer)=>{
-    const ip_addresses_length=(buffer.length-20)/6
-    let ip_addresses=[]
-    let ports=[]
-    // console.log(buffer.length)
-    for (let i=0;i<ip_addresses_length;i++)
-    {
-        let ip_address=buffer.slice(20+6*i,20+6*i+4).join('.')
-        let port=buffer.readUInt16BE(24+6*i)
-        ip_addresses.push(ip_address)
-        ports.push(port)
-    }
-    console.log(ip_addresses.length)
+const test=()=>{
+    const socket=dgram.createSocket('udp4');
+    socket.on('message',(msg,rinfo)=>{
+        console.log(msg,rinfo)
+        socket.close()
+    })
+    socket.bind(8081)
 
-    return {
-        action:buffer.readUInt32BE(0),
-        transaction_id:buffer.readUInt32BE(4),
-        interval:buffer.readUInt32BE(8),
-        leechers:buffer.readUInt32BE(12),
-        seeders:buffer.readUInt32BE(16),
-        peers:{
-            ip:ip_addresses,
-            port:ports
-        }
-    }
+    socket.send('hi its me anish',8081,'localhost')
+    
 }
 
 
 
 //for getting the peer
-const getpeers=async ()=>{
+const getpeers=async (filename,callback)=>{
     let i=0;
     const socket=dgram.createSocket('udp4');
     let url,port
@@ -131,7 +128,7 @@ const getpeers=async ()=>{
         else if(resType(response)=='announce')
         {
             const announceResp = AnnounceRespParse(response)
-            console.log(announceResp)
+            callback(announceResp.peers)
         }
         else if(resType(response)=='error')
         {
@@ -167,47 +164,7 @@ const getpeers=async ()=>{
 
 }
 
-
-//to send message in udp
-// const sendbuffers= (socket,url,message)=>{
-//     const {port,hostname}=parse(url)
-//     return new Promise((resolve, reject) => {
-//         socket.send(message, port, hostname, (err, bytes) => {
-//             if (err) {
-//                 console.error(`Error sending to ${hostname}:${port}`, err);
-//                 reject(0);
-//             }
-//             else{
-//                 resolve(1)
-//             }
-//         });
-//     });
-// }
-
-const udpSend=(socket,message,url)=>{
-    url = parse(url);
-    socket.send(message, 0, message.length, url.port, url.hostname); 
+export {
+    getpeers
 }
-
-const test=()=>{
-    const socket=dgram.createSocket('udp4');
-    socket.on('message',(msg,rinfo)=>{
-        console.log(msg,rinfo)
-        socket.close()
-    })
-    socket.bind(8081)
-
-    socket.send('hi its me anish',8081,'localhost')
-    
-}
-
-
-function main(){
-// console.log(getTrackers('espresso.torrent'));
-// connectionRequest()
-getpeers()
-// test()
-}
-
-main()
 
