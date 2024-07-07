@@ -35,7 +35,7 @@ const BuildConnectionRequestMessage=()=>{
 }
 
 //for announce request
-const announceRequestMessage=(connection_id,port)=>{
+const announceRequestMessage=(connection_id,port)=>{//port is the client listening on
 
     const torrent=readTorrentFile(filename)
     const buf=Buffer.alloc(98)

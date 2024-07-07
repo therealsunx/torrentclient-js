@@ -8,10 +8,10 @@ const readTorrentFile=(filiename)=>{
     return bencode.decode(data)
 }
 
-//for creating hash fo info
+//for creating hash for info in torrent file
 const infohash=(torrent)=>{
     const info=bencode.encode(torrent.info)
-    return crypto.createHash('sha1').update(info) //return 20 byte long as in pieces it contains hsh list of pieces which is of 20 bytes
+    return crypto.createHash('sha1').update(info).digest()//return 20 byte long as in pieces it contains hsh list of pieces which is of 20 bytes
 }
 
 const peerId=()=>{
