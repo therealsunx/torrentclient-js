@@ -1,3 +1,5 @@
+'use strict';
+
 import { infoHash } from "./torrent-parser.js";
 import { generateID } from "./utils.js";
 
@@ -68,6 +70,7 @@ export class MessageBuilder{
         _buf.writeInt32BE(index, 5);
         _buf.writeInt32BE(begin, 9);
         _buf.writeInt32BE(length, 13);
+        console.log("----req msg : ", _buf.length, _buf);
         return _buf;
     }
 
@@ -97,5 +100,33 @@ export class MessageBuilder{
         _buf.writeUint8(9, 4);
         _buf.writeUint16BE(port, 5);
         return _buf;
+    }
+}
+
+export class MessageParser{
+
+    static isHandshake(message){
+        //console.log(message.toString('utf8', 1, 20));
+        return message.length === (message.readUInt8(0)+49) && message.toString('utf8', 1, 20) === "BitTorrent protocol";
+    }
+
+    static parse(msg){
+        const id = msg.length > 4? msg.readInt8(4) : null;
+        let payload = msg.length>5? msg.slice(5) : null;
+
+        if([6,7,8].includes(id)){
+            const _rem = payload.slice(8);
+            payload = {
+                index : payload.readUInt32BE(0),
+                begin : payload.readUInt32BE(4),
+                [id===7?'block':'length'] : _rem
+            }
+        }
+
+        return {
+            size : msg.readUInt32BE(0),
+            id : id,
+            payload : payload
+        }
     }
 }

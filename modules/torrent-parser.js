@@ -15,8 +15,8 @@ export const infoHash = (torrent) => {
 }
 
 export const size = (torrent) => {
-    const _size = torrent.info.files?
-        torrent.info.files.map(f => f.length).reduce((a, b) => a+b):
-        torrent.info.length;
-    return bignum.toBuffer(_size, {size:8}); // 64b int
+    return bignum.toBuffer(size_num(torrent), {size:8}); // 64b int
 }
+export const size_num = torrent => torrent.info.files?
+    torrent.info.files.map(f => f.length).reduce((a, b) => a+b):
+    torrent.info.length;
