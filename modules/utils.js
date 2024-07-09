@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import fs from 'fs'
 // import bignum from 'bignum'
 
+
+
 const readTorrentFile=(filiename)=>{
     const data=fs.readFileSync(filiename)
     return bencode.decode(data)
