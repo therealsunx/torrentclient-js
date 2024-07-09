@@ -4,21 +4,20 @@ import {getpeers} from './tracker.js'
 import 'dotenv/config'
 import {message} from './message.js'
 import { readTorrentFile } from './utils.js'
-import { Queue ,BlockQueue} from './queue.js'
 import { createFile, saveBuffer } from './filesave.js'
+import { Block2Pieces, JobQueue } from './requestQueue.js'
 
 
-function downlaod(peer,torrent,queue,file,saveBuffer){
-const blockQueue=new BlockQueue(torrent)
+function downlaod(peer,torrent,block2Pieces,jobQueue,file){
+
 const socket = new net.Socket();
 socket.on('error', (err)=>{console.log('err')});
 socket.connect(peer.port, peer.ip, () => {
     // 1
     socket.write(message.buildHandshake(torrent));
-    // console.log('connected')
 });
 
-onWholeMsg(socket, msg => msgHandler(msg, socket,queue,blockQueue,saveBuffer));
+onWholeMsg(socket, msg => msgHandler(msg, socket,block2Pieces,jobQueue,file));
 }
 
 
@@ -43,18 +42,17 @@ socket.on('data',recvBuf=>{
 
 //making tcp connection for all peers
 const peerDownload=(filename)=>{getpeers(filename,(peers)=>{
-    // console.log(process.env.filename)
-    // console.log(peers)
     const torrent=readTorrentFile(filename)
+    const block2Pieces=new Block2Pieces(torrent)
+    const jobQueue=new JobQueue(torrent)
     const file=createFile(torrent)
-const queue=new Queue(torrent)
-peers.forEach(peer=>downlaod(peer,torrent,queue,file,saveBuffer));
+peers.forEach(peer=>downlaod(peer,torrent,block2Pieces,jobQueue,file));
 })
 }
 
-
+let count=0;
 //messagehandler
-function msgHandler(msg,socket,queue,blockQueue,file,saveBuffer){
+function msgHandler(msg,socket,block2Pieces,jobQueue,file){
     if (isHandshake(msg)){
         socket.write(message.buildInterested()); //it sends choke,have etc
     }
@@ -64,9 +62,9 @@ function msgHandler(msg,socket,queue,blockQueue,file,saveBuffer){
 
         if (m.id === 0) chokeHandler(socket);
         // if (m.id === 1) unchokeHandler();
-        if (m.id === 4) haveHandler(socket,m.payload,queue,blockQueue);
-        // if (m.id === 5) bitfieldHandler(m.payload);
-        if (m.id === 7) pieceHandler(m.payload,queue,blockQueue,file,saveBuffer);
+        if (m.id === 4) haveHandler(socket,m.payload,block2Pieces,jobQueue);
+        if (m.id === 5) bitfieldHandler(m.payload);
+        if (m.id === 7) pieceHandler(m.payload,block2Pieces,jobQueue,file);
     }
 }
 
@@ -82,42 +80,38 @@ socket.end()
 
 
 //for have handler
-function haveHandler(socket,payload,queue,blockQueue) {
-let index=payload.readInt32BE(0)
-if (queue.neededPiece(index)){
-queue.addPieces(payload)
-// let nextIndex=priority(queue.getPieces())
-let nextIndex=index
-requestNextPiece(socket,queue,blockQueue,nextIndex)
-}
+function haveHandler(socket,payload,block2Pieces,jobQueue) {
+const index=payload.readUInt32BE(0)
+const blocks=block2Pieces.getBlockPieces(index)
+blocks.map((block)=>{
+    jobQueue.addJob(block)
+})
+const nextRequest=jobQueue.nextRequest()
+
+if(nextRequest)
+requestNextPiece(socket,nextRequest)
+
+if(jobQueue.finished())
+socket.end()
  }
 
 
  //for requesting next piece--make it callback priority
- function requestNextPiece(socket,queue,blockQueue,index){
-
-    const payload={
-        index:index,
-        begin:0,
-        length:queue.getSize()
-    }
-
-    for (let i=0;i<blockQueue.getNumBlock();i++)
-    {
-        blockQueue.addRequest(i)
-        payload.begin=i*blockQueue.getSizeBlock(i)
-        payload.length=blockQueue.getSizeBlock(i)//blockQueue.getSizeBlock(i)
-        console.log(payload)
-        socket.write(message.buildRequest(payload))
-    }
+ function requestNextPiece(socket,payload){
+    console.log(payload)
+    socket.write(message.buildRequest(payload))
  }
 
 //after getting piece
-function pieceHandler(payload,queue,blockQueue,file,saveBuffer){
-// console.log(message.parse(payload))
-// queue.addReceived(payload.index)
-saveBuffer(payload,blockQueue.getSizeBlock(piece.index),file)
-console.log('getted',payload)
+function pieceHandler(payload,block2Pieces,jobQueue,file){
+    console.log('getted',payload)
+jobQueue.addReceived(payload)
+saveBuffer(payload,block2Pieces.getPieceLength(),file)
+}
+
+function bitfieldHandler(payload)
+{
+    console.log(payload)
 }
 
     
