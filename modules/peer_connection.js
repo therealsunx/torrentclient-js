@@ -7,7 +7,7 @@ import fs from "node:fs";
 import { BLOCK_SIZE } from "./utils.js";
 
 export default function getData(peer, torrent, pieces){
-    const file = fs.openSync("./hehe.mp3", 'w');
+    const file = fs.openSync(process.argv[3] || "download", 'w');
 
     const peerState = {
         count : 0,

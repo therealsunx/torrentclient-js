@@ -8,6 +8,7 @@ import { BLOCK_SIZE } from "./modules/utils.js";
 
 const torrent = openTorrent(process.argv[2]);  // node index.js __filename__
 //const torrent = openTorrent('espresso.torrent');
+console.log(process.argv);
 
 getPeers(torrent, peers => {
     //peers.forEach(peer => getData(peer, torrent));
