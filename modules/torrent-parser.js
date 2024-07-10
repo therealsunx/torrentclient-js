@@ -4,6 +4,7 @@ import bignum from "bignum";
 import crypto from "node:crypto";
 import fs from 'fs';
 import bencode from 'bencode';
+import { BLOCK_SIZE } from "./utils.js";
 
 export const openTorrent = filepath => {
     return bencode.decode(fs.readFileSync(filepath));
@@ -25,9 +26,16 @@ export const size_num = torrent => torrent.info.files?
 export const pieceLength = (torrent, index) => {
     const total =  size_num(torrent);
     const plen = torrent.info["piece length"];
+    //const plen = BLOCK_SIZE;
 
     const lplen = total % plen;
     const lpind = Math.floor(total/plen);
 
     return lpind === index? lplen : plen;
+}
+
+export const blockLength = (torrent, index, bIndex) => {
+    const plen = pieceLength(torrent, index);
+    const c = Math.floor(plen/BLOCK_SIZE)?BLOCK_SIZE:plen;
+    return bIndex?(plen-c):c;
 }

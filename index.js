@@ -1,15 +1,23 @@
 'use strict';
 
-import { openTorrent, size, size_num } from "./modules/torrent-parser.js";
+import { blockLength, openTorrent, size, size_num } from "./modules/torrent-parser.js";
 import getPeers from "./modules/tracker.js";
 import getData from "./modules/peer_connection.js";
 import { PiecesData } from "./modules/pieces.js";
+import { BLOCK_SIZE } from "./modules/utils.js";
 
 const torrent = openTorrent('espresso.torrent');
 
 getPeers(torrent, peers => {
     //peers.forEach(peer => getData(peer, torrent));
-    const pieces = new PiecesData(torrent.info.pieces.length/20)
+
+//  var _l1 = torrent.info.pieces.length/20;
+//  console.log(size_num(torrent)/_l1, torrent.info["piece length"]);
+//  if(blockLength(torrent, _l1-1, 1)===0) _l1 = _l1*2-1;
+//  else _l1 = _l1*2;
+    
+    const _len = Math.ceil(size_num(torrent)/BLOCK_SIZE);
+    const pieces = new PiecesData(_len)
     for(let p of peers){
         getData(p, torrent, pieces);
     }

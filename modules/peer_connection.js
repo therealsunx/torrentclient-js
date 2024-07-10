@@ -2,10 +2,15 @@
 
 import net from "node:net";
 import { MessageBuilder, MessageParser } from "./message.js";
-import { pieceLength } from "./torrent-parser.js";
+import { blockLength, pieceLength } from "./torrent-parser.js";
+import fs from "node:fs";
+import { BLOCK_SIZE } from "./utils.js";
 
 export default function getData(peer, torrent, pieces){
+    const file = fs.openSync("./hehe.mp3", 'w');
+
     const peerState = {
+        count : 0,
         choked : true,
         queue : []   // TODO :: set timeout for requests and re-request the unrecieved pieces
     };
@@ -70,24 +75,44 @@ export default function getData(peer, torrent, pieces){
     }
 
     function handlePieceMsg(payload){
-        console.log(`--${socket.remoteAddress} piece block : `, payload);
-        peerState.queue.shift();
+        //console.log(`--${socket.remoteAddress} piece block : `, payload);
+        addBlock(payload);
+        peerState.count ++;
+        console.log(`-- remaining : ${pieces.remaining} ::  got block : ${payload.index*2+(payload.begin>0?1:0)}`);
         requestPiece();
+    }
+
+    function addBlock(payload){
+        if(pieces.addReceived(payload.index, payload.begin>0?1:0))
+            fs.writeSync(file, payload.block, 0, payload.block.length, payload.index * torrent.info["piece length"]+payload.begin);
     }
 
     function requestPiece(){
         if(peerState.choked) return;
 
-        console.log("requesting ", peerState.queue.length);
+        //console.log(`requesting ${socket.remoteAddress}-- size remaining: `, peerState.queue.length);
         while(peerState.queue.length>0){
             const pIndex = peerState.queue.shift();
-            if(pieces.checkNeeded(pIndex)){
-                socket.write(MessageBuilder.request(pIndex, 0, pieceLength(torrent, pIndex)));
+            if(pieces.checkNeeded(pIndex, 0)){
+                socket.write(MessageBuilder.request(pIndex, 0, blockLength(torrent, pIndex, 0)));
+                pieces.addRequested(pIndex, 0);
+                break;
+            }else if(pieces.checkNeeded(pIndex, 1)){
+                socket.write(MessageBuilder.request(pIndex, BLOCK_SIZE, blockLength(torrent, pIndex, 1)));
+                pieces.addRequested(pIndex, 1);
+                break;
+            } else{
+                console.log("already requested/received : ", pIndex*2, pIndex*2+1);
+            }
+
+            /* if(pieces.checkNeeded(pIndex)){
+                const plen = pieceLength(torrent, pIndex);
+                socket.write(MessageBuilder.request(pIndex, 0, plen));
+                socket.write(MessageBuilder.request(pIndex, plen, plen));
                 pieces.addRequested(pIndex);
                 break;
-            }
+            }*/
         }
-        console.log("requested ");
     }
 
     function handleHaveMsg(payload){  // if the piece is not requested, then request it
@@ -103,7 +128,7 @@ export default function getData(peer, torrent, pieces){
         const _empflg = peerState.queue.length === 0;
         payload.forEach((x, i) => {
             for(let _=0; _<8; _++){
-                if(x%2) peerState.queue[i*8+7-_] = true;
+                if(x%2) peerState.queue.push(i*8+7-_);
                 x>>=1;
             }
             if(_empflg) requestPiece(); 

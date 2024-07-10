@@ -5,6 +5,8 @@ import crypto from "node:crypto";
 let _id = null;
 const decoder = new TextDecoder();
 
+export const BLOCK_SIZE = 16384;
+
 export const generateID = ()=>{
     if(!_id){
         _id = crypto.randomBytes(20);

@@ -70,6 +70,7 @@ export class MessageBuilder{
         _buf.writeInt32BE(index, 5);
         _buf.writeInt32BE(begin, 9);
         _buf.writeInt32BE(length, 13);
+        //console.log("req payload" , _buf);
         return _buf;
     }
 
