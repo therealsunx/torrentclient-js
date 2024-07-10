@@ -80,7 +80,7 @@ function parseConnectResponse(response){
     };
 }
 
-function announceReqMsg(connection_id, port, torrent){ // TODO
+function announceReqMsg(connection_id, port, torrent){
     const buf = Buffer.allocUnsafe(98);
 
     connection_id.copy(buf, 0);

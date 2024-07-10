@@ -17,6 +17,17 @@ export const infoHash = (torrent) => {
 export const size = (torrent) => {
     return bignum.toBuffer(size_num(torrent), {size:8}); // 64b int
 }
+
 export const size_num = torrent => torrent.info.files?
     torrent.info.files.map(f => f.length).reduce((a, b) => a+b):
     torrent.info.length;
+
+export const pieceLength = (torrent, index) => {
+    const total =  size_num(torrent);
+    const plen = torrent.info["piece length"];
+
+    const lplen = total % plen;
+    const lpind = Math.floor(total/plen);
+
+    return lpind === index? lplen : plen;
+}
