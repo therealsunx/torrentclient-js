@@ -6,7 +6,8 @@ import getData from "./modules/peer_connection.js";
 import { PiecesData } from "./modules/pieces.js";
 import { BLOCK_SIZE } from "./modules/utils.js";
 
-const torrent = openTorrent('espresso.torrent');
+const torrent = openTorrent(process.argv[2]);  // node index.js __filename__
+//const torrent = openTorrent('espresso.torrent');
 
 getPeers(torrent, peers => {
     //peers.forEach(peer => getData(peer, torrent));
