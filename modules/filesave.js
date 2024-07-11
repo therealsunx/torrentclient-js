@@ -23,9 +23,15 @@ function readSavedFile(path){
 console.log(fs.readFileSync(path))
 }
 
+function closeFile(file)
+{
+    fs.closeSync(file)
+}
+
 // readSavedFile('./savedfile.txt')
 export {
 createFile,
 saveBuffer,
-readSavedFile
+readSavedFile,
+closeFile
 }

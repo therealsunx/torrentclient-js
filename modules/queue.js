@@ -1,39 +1,32 @@
-export class Queue{
 
-    constructor(torrent){
-        this.torrent=torrent
-        this.size=torrent.info.pieces.length/20
-        this.requested=new Array(this.size).fill(false)
-        this.received=new Array(this.size).fill(false)
-        this.pieces=new Array(this.size).fill(0)
-    }
+import {BLOCK_LEN, numBlocks,blockLen} from './torrentparser.js'
 
-    addRequest(pieceIndex)
-    {
-        this.requested[pieceIndex]=true
-    }
+class BlockQueue {
+  constructor(torrent) {
+    this.torrent = torrent;
+    this.queue = [];
+    this.choked = true;
+  }
 
-    addReceived(pieceIndex){
-        this.received[pieceIndex]=true
+  enqueue(pieceIndex) {
+    const nBlocks=numBlocks(this.torrent,pieceIndex)
+    for (let i = 0; i < nBlocks; i++) {
+      const pieceBlock = {
+        index: pieceIndex,
+        begin: i * BLOCK_LEN,
+        length: blockLen(this.torrent, pieceIndex, i)
+      };
+      this.queue.push(pieceBlock);
     }
+  }
 
-    addPieces(pieceIndex){
-        this.pieces[pieceIndex]+=1
-    }
+  dequeue() { return this.queue.shift(); }
 
-    getPieces(){
-        return this.pieces
-    }
+  peek() { return this.queue[0]; }
 
-    neededPiece(pieceIndex){
-        return !this.requested[pieceIndex]
-    }
+  length() { return this.queue.length; }
+};
 
-    getSize(){
-        let size=this.torrent.info['piece length']
-        return size
-    }
+export {
+  BlockQueue
 }
-
-//blockqueue
-

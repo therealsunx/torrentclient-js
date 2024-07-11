@@ -5,6 +5,8 @@ import dgram  from 'dgram';
 import parse from 'url-parse'
 import { peerId, readTorrentFile, torrentSize ,infohash} from './utils.js';
 
+
+const BLOCK_LEN=16*1024
 //for building the connection
 const BuildConnectionParse=(buffer)=>{
     return {
@@ -52,7 +54,35 @@ const AnnounceRespParse=(buffer)=>{
     }
 }
 
+
+const pieceLen=(torrent,index)=>{
+const total_size=torrent.info.files.reduce((total,b)=>{
+    return total+b.length
+    },0)
+const pieceLength=torrent.info['piece length']
+const total_pieces=Math.ceil(total_size/pieceLength)
+return index==total_pieces-1?total_size-(index)*pieceLength:pieceLength
+}
+
+const blockLen=(pieceIndex,blockIndex)=>{
+
+    const plen=pieceLen(pieceIndex)
+const total_blocks=Math.ceil(plen/BLOCK_LEN)
+return blockIndex==total_blocks-1?plen-(blockIndex)*BLOCK_LEN:BLOCK_LEN
+}
+
+const numBlocks=(torrent,pieceIndex)=>{
+return Math.ceil(pieceLen(torrent,pieceIndex)/BLOCK_LEN)
+}
+
+
+
+
 export {
     BuildConnectionParse,
-    AnnounceRespParse
+    AnnounceRespParse,
+    BLOCK_LEN,
+    pieceLen,
+    numBlocks,
+    blockLen
 }

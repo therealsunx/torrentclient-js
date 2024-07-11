@@ -1,27 +1,56 @@
-exports = class {
+import { numBlocks, pieceLen ,BLOCK_LEN} from "./torrentparser.js";
+
+class Pieces{
     
-    constructor(size) {
-      this.requested = new Array(size).fill(false);
-      this.received = new Array(size).fill(false);
-    }
-  
-    addRequested(pieceIndex) {
-      this.requested[pieceIndex] = true;
-    }
-  
-    addReceived(pieceIndex) {
-      this.received[pieceIndex] = true;
-    }
-  
-    needed(pieceIndex) {
-      if (this.requested.every(i => i === true)) {
-        // use slice method to return a copy of an array
-        this.requested = this.received.slice();
+    constructor(torrent) {
+      function createArray()
+      {
+        const plen=torrent.info.pieces.length/20
+        const pArray=new Array(plen).fill(null)
+        const bArray=pArray.map((_,index)=>{
+          return new Array(numBlocks(torrent,index)).fill(false)
+        })
+        return bArray
       }
-      return !this.requested[pieceIndex];
+
+
+    this.requested=createArray()
+    this.received=createArray()
+    }
+
+    blockIndex(begin,pieceIndex){
+      return Math.floor(begin/BLOCK_LEN)
+    }
+  
+    addRequested(payload) {
+      const blockIndex=Math.floor(payload.begin/BLOCK_LEN)
+      this.requested[payload.index][blockIndex]=true
+    }
+  
+    addReceived(payload) {
+      const blockIndex=Math.floor(payload.begin/BLOCK_LEN)
+      this.received[payload.index][blockIndex]= true;
+    }
+  
+    needed(payload) {
+      if (this.requested.every((blocks)=>
+        blocks.every((block)=>block)
+      ))
+      {
+        this.requested=this.received.map((piece)=>piece.slice())
+      }
+
+      const blockIndex=Math.floor(payload.begin/BLOCK_LEN)
+      return !this.requested[payload.index][blockIndex]
     }
   
     isDone() {
-      return this.received.every(i => i === true);
+      return this.requested.every((blocks)=>
+        blocks.every((block)=>block)
+      )
     }
   };
+
+  export {
+    Pieces
+  }
