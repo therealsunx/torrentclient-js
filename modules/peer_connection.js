@@ -23,11 +23,6 @@ export default function getData(peer, torrent, pieces, debugMode){
         socket.write(MessageBuilder.handshake(torrent));
     });
 
-    //socket.on('data', data => {
-        //    if(debugMode) console.log("------- Recieved data : length : ", data.length, "\n-----", data.subarray(1, 16)); // buf.subarray is deprecated
-        //});
-
-
     onGetMsgComplete(msg => handleMessage(msg));
 
     //socket.on('data', d => console.log(`\n${peer.ip}:${peer.port} -- ${d.length} : `, d));
@@ -58,7 +53,7 @@ export default function getData(peer, torrent, pieces, debugMode){
                     handlePieceMsg(msg.payload);
                     break;
                 default:
-                    if(debugMode) console.log("[DEBUG] ------ routed to default", msg);
+                    if(debugMode) console.log("[DEBUG] ------ ignored message : ", msg);
             }
         }
     }

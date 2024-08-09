@@ -1,6 +1,6 @@
 'use strict';
 
-import { blockLength, openTorrent, size, size_num } from "./modules/torrent-parser.js";
+import { openTorrent, size_num } from "./modules/torrent-parser.js";
 import getPeers from "./modules/tracker.js";
 import getData from "./modules/peer_connection.js";
 import { PiecesData } from "./modules/pieces.js";
@@ -11,7 +11,7 @@ const debugMode = process.argv.length === 5 && process.argv[4] === "-D";
 //const torrent = openTorrent('espresso.torrent');
 console.log(process.argv, debugMode);
 
-getPeers(torrent, peers => {
+getPeers(torrent,debugMode, peers => {
     //peers.forEach(peer => getData(peer, torrent));
 
 //  var _l1 = torrent.info.pieces.length/20;

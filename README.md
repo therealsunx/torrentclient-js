@@ -82,8 +82,6 @@ Offset  Size            Name            Value
 
 8       64-bit integer  connection_id
 
-16
-
 ```
 
 **Announce**
@@ -124,8 +122,6 @@ Offset  Size    Name    Value
 
 96      16-bit integer  port
 
-98
-
 ```
 
 12. Receive the packet.
@@ -155,8 +151,6 @@ Offset      Size            Name            Value
 20 + 6 * n  32-bit integer  IP address
 
 24 + 6 * n  16-bit integer  TCP port
-
-20 + 6 * N
 
 ```
 

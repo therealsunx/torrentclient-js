@@ -6,7 +6,7 @@ import crypto from "node:crypto";
 import { infoHash, size } from "./torrent-parser.js";
 import { generateID, bufToStr } from "./utils.js";
 
-export default function getPeers (torrent, recievePeersCallback) {
+export default function getPeers (torrent, debugMode, recievePeersCallback) {
     const socket = dgram.createSocket('udp4');
     const url = parse(bufToStr(torrent.announce));
     //const url = parse('udp://93.158.213.92:1337');
@@ -16,7 +16,7 @@ export default function getPeers (torrent, recievePeersCallback) {
     sendUDP(socket, connectionReqMsg(), url, err => {if(err) console.log("Error sending message : " , err)});
 
     socket.on('listening', () => {
-        console.log("listening");
+        if(debugMode) console.log("listening");
     });
 
     socket.on("message", res => {
@@ -24,6 +24,7 @@ export default function getPeers (torrent, recievePeersCallback) {
         if(responseType(res) === 'connect'){
             // recieve and parse connection response
             const _connResp = parseConnectResponse(res);
+            
             // send announce req
             const _announceMsg = announceReqMsg(_connResp.connection_id, url.port, torrent);
             sendUDP(socket, _announceMsg, url);
@@ -36,7 +37,7 @@ export default function getPeers (torrent, recievePeersCallback) {
     });
 
     socket.on('error', err => {
-        console.log(err);
+        if(debugMode) console.log(err);
         socket.close();
     });
 };
