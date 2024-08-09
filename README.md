@@ -20,9 +20,17 @@ node ./index.js __torrent_file__ __output_filename__
 
 ```
 
+For enabling debug mode, add '-D' flag at last.
+
+```
+
+node ./index.js __torrent_file__ __output_filename__ -D
+
+```
+
 ## Development
 
-Developing a torrent client involves two major steps: getting peer data from the tracker and connection and message/data passing.
+Developing a torrent client involves two major steps: getting peer data from the tracker and connection and message/data passing with peers.
 
 ### Initial Step
 

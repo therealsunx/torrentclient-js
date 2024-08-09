@@ -6,10 +6,11 @@ import { blockLength, pieceLength } from "./torrent-parser.js";
 import fs from "node:fs";
 import { BLOCK_SIZE } from "./utils.js";
 
-export default function getData(peer, torrent, pieces){
-    const file = fs.openSync(process.argv[3] || "download", 'w');
+export default function getData(peer, torrent, pieces, debugMode){
+    const target_filename = process.argv[3] || "torrent.download";
+    const file = fs.openSync(target_filename, 'w');
 
-    const peerState = {
+  const peerState = {
         count : 0,
         choked : true,
         queue : []   // TODO :: set timeout for requests and re-request the unrecieved pieces
@@ -18,12 +19,12 @@ export default function getData(peer, torrent, pieces){
     const socket = new net.Socket();
 
     socket.connect(peer.port, peer.ip, ()=>{
-        console.log("------- Connection established with : ", peer.ip, ":", peer.port);
+        if(debugMode) console.log("[DEBUG] ------- Connection established with : ", peer.ip, ":", peer.port);
         socket.write(MessageBuilder.handshake(torrent));
     });
 
     //socket.on('data', data => {
-        //    console.log("------- Recieved data : length : ", data.length, "\n-----", data.subarray(1, 16)); // buf.subarray is deprecated
+        //    if(debugMode) console.log("------- Recieved data : length : ", data.length, "\n-----", data.subarray(1, 16)); // buf.subarray is deprecated
         //});
 
 
@@ -36,7 +37,7 @@ export default function getData(peer, torrent, pieces){
     function handleMessage(message){
         if(MessageParser.isHandshake(message)){
             socket.write(MessageBuilder.interested());
-            console.log(`--interested --> ${socket.remoteAddress}`);
+            if(debugMode) console.log(`[DEBUG] --interested --> ${socket.remoteAddress}`);
         } else {
             const msg = MessageParser.parse(message);
 
@@ -57,19 +58,19 @@ export default function getData(peer, torrent, pieces){
                     handlePieceMsg(msg.payload);
                     break;
                 default:
-                    console.log("------ routed to default", msg);
+                    if(debugMode) console.log("[DEBUG] ------ routed to default", msg);
             }
         }
     }
 
     function handleChokeMsg(){
-        console.log(`--${socket.remoteAddress} choke`);
+        if(debugMode) console.log(`[DEBUG] --${socket.remoteAddress} choke`);
         peerState.choked = true;
         socket.end();
     }
 
     function handleUnchokeMsg(){
-        console.log(`--${socket.remoteAddress} unchoke`);
+        if(debugMode) console.log(`[DEBUG] --${socket.remoteAddress} unchoke`);
         peerState.choked = false;
         requestPiece();
     }
@@ -78,8 +79,15 @@ export default function getData(peer, torrent, pieces){
         //console.log(`--${socket.remoteAddress} piece block : `, payload);
         addBlock(payload);
         peerState.count ++;
-        console.log(`-- remaining : ${pieces.remaining} ::  got block : ${payload.index*2+(payload.begin>0?1:0)}`);
-        requestPiece();
+        if(debugMode) console.log(`[DEBUG] remaining count : ${pieces.remaining} ::  got block : ${payload.index*2+(payload.begin>0?1:0)}`);
+        console.log("-- Downloading ", pieces.completed().toFixed(2), "% ---");
+        if(pieces.isDone()) {
+            socket.end();
+            fs.close(file, err=>{if(err) console.log(err)});
+            console.log("------------ Recieved Data Successfully -----------");
+            console.log("Downloaded file ", target_filename);
+            process.exit(0);
+        } else requestPiece();
     }
 
     function addBlock(payload){
@@ -102,7 +110,7 @@ export default function getData(peer, torrent, pieces){
                 pieces.addRequested(pIndex, 1);
                 break;
             } else{
-                console.log("already requested/received : ", pIndex*2, pIndex*2+1);
+                if(debugMode) console.log("[DEBUG] already requested/received : ", pIndex*2, pIndex*2+1);
             }
 
             /* if(pieces.checkNeeded(pIndex)){
@@ -116,7 +124,7 @@ export default function getData(peer, torrent, pieces){
     }
 
     function handleHaveMsg(payload){  // if the piece is not requested, then request it
-        console.log(`--${socket.remoteAddress} have : `, payload);
+        if(debugMode) console.log(`[DEBUG] --${socket.remoteAddress} have : `, payload);
 
         const pIndex = payload.readUInt32BE(0);
         peerState.queue.push(pIndex);
@@ -124,7 +132,7 @@ export default function getData(peer, torrent, pieces){
     }
 
     function handleBitfieldMsg(payload){
-        console.log(`--${socket.remoteAddress} len : ${payload.length} bitfields : `, payload);
+        if(debugMode) console.log(`[DEBUG] --${socket.remoteAddress} len : ${payload.length} bitfields : `, payload);
         const _empflg = peerState.queue.length === 0;
         payload.forEach((x, i) => {
             for(let _=0; _<8; _++){

@@ -32,7 +32,12 @@ export class PiecesData {
     }
 
     isDone() {
+        if(this.remaining > 0) return false;
         return this.recieved.every(_=>_);
+    }
+
+    completed(){
+        return (1 - this.remaining/(this.lastblock+1)) * 100;
     }
 }
 
